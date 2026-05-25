@@ -926,25 +926,30 @@ def render_financial_guidance():
         
         elif guidance_tab == "EMI Management":
             st.markdown("### 💰 EMI Management")
-            
+
             monthly_income = st.number_input("Monthly Income (₹)", min_value=10000, value=50000, step=5000, key="income_emi")
             total_emis = st.number_input("Total EMIs (₹)", min_value=0, value=15000, step=1000, key="total_emis")
-            
+
             emi_ratio = (total_emis / monthly_income) * 100
-            
+
             st.progress(min(emi_ratio / 100, 1.0))
             st.metric("EMI Burden", f"{emi_ratio:.1f}%")
-            
+
             if emi_ratio <= 40:
                 st.success("✅ Healthy burden!")
             elif emi_ratio <= 50:
                 st.warning("⚠️ Moderate burden")
             else:
                 st.error("❌ High burden")
-            
+
             st.write("✓ Keep EMI below 40% of income")
             st.write("✓ Maintain emergency fund")
             st.write("✓ Set up auto-debit")
+            if st.button("💬 Ask FlexiBot", key="emi_mgmt_chat"):
+                st.session_state.workflow_stream = "💬 Chat with FlexiBot"
+                st.session_state.messages.append({"role": "user", "content": f"My monthly income is Rs.{monthly_income:,} and my total EMI obligations are Rs.{total_emis:,} (burden: {emi_ratio:.1f}%). Give me advice on managing my EMIs and whether I can afford a new loan."})
+                st.session_state.flexibot_messages = st.session_state.messages.copy()
+                st.rerun()
         
         elif guidance_tab == "Loan Comparison":
             st.markdown("### 🔍 Loan Comparison")
@@ -966,12 +971,21 @@ def render_financial_guidance():
             if st.button("Compare", key="compare_btn"):
                 result_a = calculate_emi(loan_a, rate_a, tenure_a)
                 result_b = calculate_emi(loan_b, rate_b, tenure_b)
-                
+                st.session_state["_loan_compare"] = {"a": {"loan": loan_a, "rate": rate_a, "tenure": tenure_a, "emi": result_a["emi"], "interest": result_a["total_interest"]}, "b": {"loan": loan_b, "rate": rate_b, "tenure": tenure_b, "emi": result_b["emi"], "interest": result_b["total_interest"]}}
+
                 st.metric("A - EMI", f"₹{result_a['emi']:,.0f}")
                 st.metric("B - EMI", f"₹{result_b['emi']:,.0f}")
-                
+
                 if result_a['total_interest'] < result_b['total_interest']:
                     st.success(f"💡 A saves ₹{result_b['total_interest'] - result_a['total_interest']:,.0f}!")
+
+            if st.session_state.get("_loan_compare"):
+                c = st.session_state["_loan_compare"]
+                if st.button("💬 Ask FlexiBot which is better", key="compare_chat"):
+                    st.session_state.workflow_stream = "💬 Chat with FlexiBot"
+                    st.session_state.messages.append({"role": "user", "content": f"Compare these two loan options and tell me which is better: Option A — Rs.{c['a']['loan']:,} at {c['a']['rate']}% for {c['a']['tenure']} months (EMI Rs.{c['a']['emi']:,.0f}, total interest Rs.{c['a']['interest']:,.0f}). Option B — Rs.{c['b']['loan']:,} at {c['b']['rate']}% for {c['b']['tenure']} months (EMI Rs.{c['b']['emi']:,.0f}, total interest Rs.{c['b']['interest']:,.0f})."})
+                    st.session_state.flexibot_messages = st.session_state.messages.copy()
+                    st.rerun()
         
         elif guidance_tab == "Financial Health Check":
             st.markdown("### 🏥 Health Check")
@@ -994,12 +1008,21 @@ def render_financial_guidance():
                 st.progress(health_score / 100)
                 st.metric("Health Score", f"{health_score}/100")
                 
+                st.session_state["_health_check"] = {"income": income, "expenses": expenses, "savings": savings, "debt": debt, "score": health_score, "savings_rate": round(savings_rate,1), "debt_ratio": round(debt_ratio,1)}
                 if health_score >= 80:
                     st.success("🌟 Excellent!")
                 elif health_score >= 60:
                     st.info("👍 Good")
                 else:
                     st.warning("⚠️ Needs attention")
+
+            if st.session_state.get("_health_check"):
+                h = st.session_state["_health_check"]
+                if st.button("💬 Ask FlexiBot for advice", key="health_chat"):
+                    st.session_state.workflow_stream = "💬 Chat with FlexiBot"
+                    st.session_state.messages.append({"role": "user", "content": f"My financial health: Income Rs.{h['income']:,}/month, Expenses Rs.{h['expenses']:,}, Savings Rs.{h['savings']:,} ({h['savings_rate']}% rate), Total Debt Rs.{h['debt']:,} ({h['debt_ratio']}% of annual income). My health score is {h['score']}/100. What should I do to improve my finances and am I in a good position to take a loan?"})
+                    st.session_state.flexibot_messages = st.session_state.messages.copy()
+                    st.rerun()
 
 # PDF Generation Functions
 def generate_application_pdf(applicant_data):
@@ -3100,59 +3123,85 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
                     "Present this as a clear recommendation table. Then ask if they want to apply.\n"
                 )
 
-            system_instruction = f"""You are FlexiBot — the complete, intelligent virtual loan agent for FlexiLoans (India's leading digital NBFC for business loans). You guide every customer end-to-end with zero handoff.
+            # ── Sidebar tool context ──────────────────────────────────────────
+            sidebar_context = ""
+            if st.session_state.get("_health_check"):
+                h = st.session_state["_health_check"]
+                sidebar_context += (f"\nFINANCIAL HEALTH DATA (from sidebar): Income Rs.{h['income']:,} | "
+                    f"Expenses Rs.{h['expenses']:,} | Savings Rs.{h['savings']:,} ({h['savings_rate']}% rate) | "
+                    f"Total Debt Rs.{h['debt']:,} ({h['debt_ratio']}% of annual income) | Health Score: {h['score']}/100\n")
+            if st.session_state.get("_loan_compare"):
+                c = st.session_state["_loan_compare"]
+                sidebar_context += (f"\nLOAN COMPARISON (from sidebar): "
+                    f"Option A — Rs.{c['a']['loan']:,} @ {c['a']['rate']}% for {c['a']['tenure']}m, EMI Rs.{c['a']['emi']:,.0f}, interest Rs.{c['a']['interest']:,.0f} | "
+                    f"Option B — Rs.{c['b']['loan']:,} @ {c['b']['rate']}% for {c['b']['tenure']}m, EMI Rs.{c['b']['emi']:,.0f}, interest Rs.{c['b']['interest']:,.0f}\n")
+            if st.session_state.emi_calculation:
+                ec = st.session_state.emi_calculation
+                sidebar_context += (f"\nEMI CALCULATOR RESULT (from sidebar): "
+                    f"Rs.{ec['principal']:,} loan → EMI Rs.{ec['emi']:,.0f}/month | "
+                    f"Total Interest Rs.{ec['total_interest']:,.0f} | Total Payment Rs.{ec['total_payment']:,.0f}\n")
+            credit_score_ctx = f"Credit Score (sidebar): {st.session_state.credit_score_input}"
+
+            system_instruction = f"""You are FlexiBot — the complete, intelligent virtual loan agent for FlexiLoans (India's leading digital NBFC for business loans). You handle EVERYTHING in one chat — no handoffs, no redirects.
 Date: 2026-05-26
 
 {gathered_block}
 {missing_note}
+{credit_score_ctx}
 {f"LIVE APPLICATION DATA:{app_context_block}" if app_context_block else ""}
 {emi_context}
 {reco_context}
+{sidebar_context}
 
 ━━━ PORTAL KNOWLEDGE ━━━
 ELIGIBILITY: Age 21–65 | Annual Turnover ≥ Rs.12,00,000 | Monthly Income ≥ Rs.50,000
 MANDATORY DOCS: PAN Card only (uploaded directly in this chat)
 LOAN RANGE: Rs.1 Lakh – Rs.2 Crore | 12–60 months | 10–18% p.a.
 EMI RULE: Safe EMI = 40% of monthly income
-TOP-UP (approved customers): max(75% of loan, 3× income) | Rate+0.5% | Tenure 6–24 months | 24-hr disbursal | 1% fee
-STATUSES → APPROVED: celebrate + offer top-up | IN_PROGRESS: check pending docs | REJECTED: explain + improvement plan + reapply date
+TOP-UP: max(75% of loan, 3× income) | Rate+0.5% | 6–24 months | 24-hr disbursal | 1% fee
+CREDIT SCORE: <650 poor (14% rate) | 650–700 fair (13%) | 700–750 good (11.5%) | 750+ excellent (10.5%)
+
+━━━ SIDEBAR TOOLS (you are fully integrated with these) ━━━
+1. EMI CALCULATOR — if user asks for EMI, compute it yourself: EMI = P×r×(1+r)^n/((1+r)^n−1). Also suggest they can use the EMI Calculator in the left sidebar for visual breakdown.
+2. FINANCIAL GUIDANCE topics you handle directly in chat:
+   - CREDIT SCORE: Analyse their score (from sidebar context or ask), give improvement plan, timeline to reach 750+
+   - EMI MANAGEMENT: Use FINANCIAL HEALTH DATA if available. Check if EMI burden >40% — if so, advise reducing or delaying loan
+   - LOAN COMPARISON: Use LOAN COMPARISON data if available, else ask for two options and compare total interest
+   - FINANCIAL HEALTH CHECK: Use FINANCIAL HEALTH DATA if available — give score interpretation + specific advice
+3. SMART RECOMMENDATIONS: Use SMART RECOMMENDATION data to show optimal loan amount, tenure, rate, EMI. Also suggest suitable products (insurance, credit card, business credit line).
+   For sidebar tools, always add: "You can also explore this in detail using the [Tool Name] in the left sidebar."
 
 ━━━ INTENT-BASED BEHAVIOUR ━━━
 
-RECOMMENDATION INTENT ("recommend", "suggest", "how much", "afford"):
-  - Ask for income + turnover + age ONLY (not name or phone yet)
-  - Use SMART RECOMMENDATION data above to show a table: Optimal Loan | EMI | Tenure | Rate
-  - After showing recommendation, ask: "Would you like to apply for this loan?"
-  - DO NOT start collecting name/phone unless user says yes
+RECOMMENDATION ("recommend", "suggest", "how much", "afford", "best loan"):
+  - Ask income + turnover + age ONLY first
+  - Show table: Optimal Loan | Monthly EMI | Tenure | Interest Rate | Max Safe EMI
+  - Suggest cross-sell: Loan Insurance, Credit Card if score ≥700, Business Credit Line if turnover ≥2Cr
+  - End with: "Want me to start your application for this amount?"
 
-APPLY INTENT ("apply", "want a loan", "get a loan"):
-  - Collect name → age → phone → income → turnover one at a time
-  - Phone must be exactly 10 digits — if not, ask again
-  - Once all 5 collected + eligible: say "Great news! The PAN Card upload section is now visible just below our chat — please upload to get instant approval!"
-  - If INELIGIBLE: explain which criteria failed, give improvement tips
+APPLY ("apply", "want a loan", "get a loan", "start application"):
+  - Collect name → age → phone (10 digits) → income → turnover one at a time
+  - Once all 5 + eligible: "PAN Card upload section is now visible just below this chat"
+  - If INELIGIBLE: explain exactly which criterion failed + what to do to qualify
 
-STATUS CHECK (existing applicant found by ID or phone):
-  - Greet by name, state their exact status and stage
-  - For APPROVED: celebrate, state loan amount, offer top-up
-  - For IN_PROGRESS with pending docs: list exactly which docs are missing, say "I've placed a blue action button above — click it to go directly to your application and upload the documents"
-  - For IN_PROGRESS without pending docs: give estimated completion date
-  - For REJECTED: explain reason, give improvement plan, give reapply date
-  - Always say: "I've placed a navigation button above to take you directly to your application"
+STATUS CHECK (found by ID or phone):
+  - APPROVED: congratulate, state loan amount + disbursement date, offer top-up
+  - IN_PROGRESS with pending docs: list docs, say "I've placed a navigation button above — click to upload directly"
+  - IN_PROGRESS no pending docs: give estimated date
+  - REJECTED: give reason + improvement plan + reapply date
 
-NEW APPLICANT APPLY FLOW (after all 5 fields + eligible):
-  - Say: "You're eligible! A PAN Card upload section has appeared below this chat — please upload to get instant approval"
-  - Do NOT tell them to click any button for new applications — the upload is already visible below
-
-EMI CALC: Use LIVE EMI RESULT if available, otherwise ask for amount/rate/tenure.
-TOP-UP: For approved customers — calculate max top-up, quote EMI, say "click the blue button above to proceed"
+EMI CALC: Calculate inline. Then ask if they want to apply.
+FINANCIAL ADVICE: Answer fully in chat. Reference sidebar tool for detailed exploration.
+TOP-UP: Approved customers only — calculate amount, EMI, say "click the button above"
 
 RULES:
-1. NEVER ask for name/phone when user only wants recommendations
-2. NEVER confuse a 10-digit phone number with annual turnover
-3. One question at a time when collecting profile fields
-4. Use Rs. not ₹ symbol
-5. Be warm, specific, action-oriented — always name the customer
-6. End every response with exactly one clear next step
+1. Never ask name/phone for recommendation-only requests
+2. Never mistake 10-digit phone for turnover
+3. One question at a time
+4. Use Rs. (not ₹)
+5. Always name the customer in responses
+6. Every response ends with exactly one next step
+7. Reference sidebar tools as optional deep-dives, not as required navigation
 """
 
             chat_history = []
