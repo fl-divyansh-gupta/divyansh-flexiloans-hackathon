@@ -300,67 +300,100 @@ button[kind="primaryFormSubmit"] {
   font-size: 13px !important;
 }
 
-/* ── Sidebar expander — dark-themed ── */
+/* ══ SIDEBAR DARK THEME — comprehensive widget overrides ══ */
+
+/* All text white */
+[data-testid="stSidebar"] * { color: #FFFFFF !important; }
+[data-testid="stSidebar"] p,
+[data-testid="stSidebar"] li,
+[data-testid="stSidebar"] span,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] div { color: rgba(255,255,255,0.9) !important; }
+
+/* Expander — dark bg, white text */
 [data-testid="stSidebar"] [data-testid="stExpander"] {
-  background: rgba(255,255,255,0.06) !important;
+  background: rgba(255,255,255,0.07) !important;
   border: 1px solid rgba(255,255,255,0.15) !important;
   border-radius: 8px !important;
 }
-[data-testid="stSidebar"] [data-testid="stExpander"] summary,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+  background: rgba(255,255,255,0.07) !important;
+  color: #FFFFFF !important;
+  border-radius: 8px !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary *,
 [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
 [data-testid="stSidebar"] [data-testid="stExpander"] summary span {
-  color: rgba(255,255,255,0.9) !important;
-  font-size: 12px !important;
+  color: #FFFFFF !important;
+  background: transparent !important;
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
-  fill: rgba(255,255,255,0.7) !important;
-  stroke: rgba(255,255,255,0.7) !important;
+  fill: rgba(255,255,255,0.8) !important;
+  stroke: rgba(255,255,255,0.8) !important;
+}
+/* Expander open content area */
+[data-testid="stSidebar"] details > div,
+[data-testid="stSidebar"] [data-testid="stExpander"] > div {
+  background: transparent !important;
 }
 
-/* ── Sidebar inputs & selects — dark-themed ── */
-[data-testid="stSidebar"] .stTextInput > div > div > input,
-[data-testid="stSidebar"] .stNumberInput > div > div > input,
-[data-testid="stSidebar"] .stSelectbox > div > div,
-[data-testid="stSidebar"] .stSelectbox > div > div > div {
+/* ALL input elements in sidebar — dark bg white text */
+[data-testid="stSidebar"] input,
+[data-testid="stSidebar"] input[type="number"],
+[data-testid="stSidebar"] input[type="text"] {
   background: rgba(255,255,255,0.1) !important;
+  color: #FFFFFF !important;
+  border: 1px solid rgba(255,255,255,0.25) !important;
+  border-radius: 6px !important;
+}
+[data-testid="stSidebar"] input::placeholder { color: rgba(255,255,255,0.4) !important; }
+
+/* BaseWeb input wrapper */
+[data-testid="stSidebar"] [data-baseweb="input"],
+[data-testid="stSidebar"] [data-baseweb="base-input"] {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.25) !important;
+}
+[data-testid="stSidebar"] [data-baseweb="input"] input { background: transparent !important; }
+
+/* Number input stepper buttons */
+[data-testid="stSidebar"] button[data-testid="stNumberInputStepDown"],
+[data-testid="stSidebar"] button[data-testid="stNumberInputStepUp"],
+[data-testid="stSidebar"] [data-testid="stNumberInput"] button {
+  background: rgba(255,255,255,0.12) !important;
   color: #FFFFFF !important;
   border-color: rgba(255,255,255,0.2) !important;
 }
-[data-testid="stSidebar"] .stNumberInput button {
-  background: rgba(255,255,255,0.1) !important;
-  color: #FFFFFF !important;
-  border-color: rgba(255,255,255,0.2) !important;
-}
 
-/* ── Sidebar slider labels ── */
+/* Select / dropdown */
+[data-testid="stSidebar"] [data-baseweb="select"] > div,
+[data-testid="stSidebar"] [data-testid="stSelectbox"] > div > div {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.25) !important;
+  color: #FFFFFF !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] span { color: #FFFFFF !important; }
+
+/* Slider labels and values */
 [data-testid="stSidebar"] [data-testid="stSlider"] p,
 [data-testid="stSidebar"] [data-testid="stSlider"] span,
-[data-testid="stSidebar"] [data-testid="stSlider"] label {
-  color: rgba(255,255,255,0.85) !important;
-}
+[data-testid="stSidebar"] [data-testid="stSlider"] label,
+[data-testid="stSidebar"] [data-testid="stSlider"] div { color: rgba(255,255,255,0.85) !important; }
 
-/* ── Sidebar all text elements — strong override ── */
-[data-testid="stSidebar"] p { color: rgba(255,255,255,0.85) !important; }
-[data-testid="stSidebar"] li { color: rgba(255,255,255,0.85) !important; }
-[data-testid="stSidebar"] span:not([data-testid]) { color: rgba(255,255,255,0.85) !important; }
-[data-testid="stSidebar"] .stMarkdown p { color: rgba(255,255,255,0.85) !important; }
-[data-testid="stSidebar"] .stMarkdown li { color: rgba(255,255,255,0.85) !important; }
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: rgba(255,255,255,0.85) !important; }
-[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li { color: rgba(255,255,255,0.85) !important; }
-
-/* ── Sidebar caption ── */
+/* Caption */
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
 [data-testid="stSidebar"] small { color: rgba(255,255,255,0.55) !important; }
 
-/* ── Sidebar selectbox option text ── */
-[data-testid="stSidebar"] [data-testid="stSelectbox"] span { color: rgba(255,255,255,0.9) !important; }
-
-/* ── Sidebar info/success/warning/error boxes ── */
+/* Alert / info boxes inside sidebar */
 [data-testid="stSidebar"] [data-testid="stAlert"] {
   background: rgba(255,255,255,0.1) !important;
   border-color: rgba(255,255,255,0.25) !important;
 }
-[data-testid="stSidebar"] [data-testid="stAlert"] p { color: #FFFFFF !important; }
+[data-testid="stSidebar"] [data-testid="stAlert"] * { color: #FFFFFF !important; }
+
+/* Metric inside sidebar */
+[data-testid="stSidebar"] [data-testid="stMetricValue"] { color: var(--brand-cyan) !important; font-size: 16px !important; font-weight: 700 !important; }
+[data-testid="stSidebar"] [data-testid="stMetricLabel"] { color: rgba(255,255,255,0.65) !important; font-size: 10px !important; }
 
 /* ── Progress bar ── */
 .stProgress > div > div { background: var(--brand-cyan) !important; border-radius: 99px !important; }
