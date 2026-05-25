@@ -42,7 +42,7 @@ Built for hackathon evaluation, this system demonstrates enterprise-grade loan p
 
 ## ✨ Key Features
 
-### 🔄 Twin-Stream Application Pipeline
+### 🔄 Three-Stream Application Pipeline
 
 #### Stream A: New Applicant Journey
 - Real-time eligibility validation against configurable rules
@@ -56,6 +56,12 @@ Built for hackathon evaluation, this system demonstrates enterprise-grade loan p
 - Status-based routing (Approved/In Progress/Rejected)
 - Document submission for pending requirements
 - Sanction letter and offer letter generation
+
+#### Stream C: Direct Chat with FlexiBot *(New!)*
+- Instant chat access — no form or login required
+- Ask anything: eligibility, EMI, documents, loan products
+- General-purpose FlexiLoans AI advisor with full product knowledge
+- Smart handoff: guides users to New/Existing Applicant streams when ready
 
 ### 🤖 AI-Powered Features
 
@@ -208,15 +214,17 @@ Built for hackathon evaluation, this system demonstrates enterprise-grade loan p
 ### System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Streamlit Frontend                       │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
-│  │   Sidebar    │  │  Main Panel  │  │  Chat Widget │      │
-│  │  - Progress  │  │  - Forms     │  │  - FlexiBot  │      │
-│  │  - EMI Calc  │  │  - Documents │  │  - Messages  │      │
-│  │  - Guidance  │  │  - Status    │  │  - Upload    │      │
-│  └──────────────┘  └──────────────┘  └──────────────┘      │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                      Streamlit Frontend                           │
+│  ┌──────────────┐  ┌───────────────────────────┐  ┌──────────┐  │
+│  │   Sidebar    │  │        Main Panel          │  │   Chat   │  │
+│  │  - Stream A  │  │  Stream A: Eligibility +   │  │ FlexiBot │  │
+│  │  - Stream B  │  │           Doc Upload       │  │ Messages │  │
+│  │  - Stream C  │  │  Stream B: Status + Docs   │  │  Upload  │  │
+│  │  - EMI Calc  │  │  Stream C: Direct Chat     │  │          │  │
+│  │  - Guidance  │  │                            │  │          │  │
+│  └──────────────┘  └───────────────────────────┘  └──────────┘  │
+└──────────────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -258,6 +266,9 @@ User Input → Eligibility Check → Document Upload → AI Chat → Verificatio
 
 Existing Applicant Flow:
 App ID + Phone → Verification → Status Retrieval → AI Support → Document Submission
+
+Direct Chat Flow:
+Open Chat → FlexiBot Greets → Ask Questions → Get Guided → Apply via Sidebar
 ```
 
 ### Component Interaction
@@ -282,8 +293,8 @@ Streamlit UI → Session State → Business Logic → External APIs → Response
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/flexiloans-onboarding.git
-cd flexiloans-onboarding
+git clone https://github.com/fl-divyansh-gupta/divyansh-flexiloans-hackathon.git
+cd divyansh-flexiloans-hackathon
 ```
 
 ### Step 2: Create Virtual Environment (Recommended)
@@ -328,17 +339,16 @@ The application will open automatically in your default browser at `http://local
 
 ### Quick Start Guide
 
-#### For New Applicants:
+#### Stream A — New Applicants:
 
 1. **Select Stream**: Choose "New Applicant" from sidebar
 2. **Fill Form**: Enter name, phone, age, turnover, income
 3. **Check Eligibility**: Click "Check Eligibility"
-4. **Download Form**: Get application form PDF
-5. **Upload Documents**: Upload PAN card and bank statement
-6. **Chat with FlexiBot**: Get guidance and complete application
-7. **Download Confirmation**: Get submission confirmation PDF
+4. **Upload Documents**: Upload PAN card and bank statement
+5. **Chat with FlexiBot**: Get guidance and complete application
+6. **Download Confirmation**: Get submission confirmation PDF
 
-#### For Existing Applicants:
+#### Stream B — Existing Applicants:
 
 1. **Select Stream**: Choose "Existing Applicant" from sidebar
 2. **Enter Application ID**: Provide your FL-2026-XXXX ID
@@ -346,6 +356,13 @@ The application will open automatically in your default browser at `http://local
 4. **View Status**: See current application stage
 5. **Download Documents**: Get sanction/offer letters (if approved)
 6. **Chat Support**: Get help from FlexiBot
+
+#### Stream C — Direct Chat *(New!)*:
+
+1. **Select Stream**: Choose "💬 Chat with FlexiBot" from sidebar
+2. **Start Chatting**: FlexiBot greets you instantly — no form required
+3. **Ask Anything**: Loan products, eligibility, EMI estimates, documents
+4. **Get Guided**: FlexiBot directs you to the right stream when you're ready to apply
 
 ### Test Credentials
 
@@ -647,7 +664,6 @@ doc.build(elements)
 
 ## 🚧 Future Enhancements
 
-- [ ] Multi-language support (Hindi, Tamil, Telugu)
 - [ ] SMS/Email notifications
 - [ ] Payment gateway integration
 - [ ] Video KYC integration
@@ -698,13 +714,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For questions or support:
 - Email: support@flexiloans.com
 - Documentation: [Link to docs]
-- Issues: [GitHub Issues](https://github.com/yourusername/flexiloans-onboarding/issues)
+- Issues: [GitHub Issues](https://github.com/fl-divyansh-gupta/divyansh-flexiloans-hackathon/issues)
 
 ---
 
 ## 📊 Project Stats
 
-- **Lines of Code**: ~3,500+
+- **Lines of Code**: ~3,700+
+- **Application Streams**: 3 (New / Existing / Direct Chat)
 - **Components**: 20+ interactive features
 - **PDF Templates**: 4 professional documents
 - **Test Cases**: 7 sample profiles

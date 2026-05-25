@@ -65,7 +65,7 @@ st.sidebar.markdown("---")
 
 stream_choice = st.sidebar.radio(
     "Select Application Stream:",
-    ["New Applicant", "Existing Applicant"],
+    ["New Applicant", "Existing Applicant", "💬 Chat with FlexiBot"],
     key="stream_selector"
 )
 
@@ -465,10 +465,10 @@ def generate_application_pdf(applicant_data):
         ['Full Name', applicant_data['name']],
         ['Phone Number', applicant_data['phone']],
         ['Age', str(applicant_data['age'])],
-        ['Gross Annual Turnover', f"₹{applicant_data['turnover']:,}"],
-        ['Net Monthly Income', f"₹{applicant_data['income']:,}"],
+        ['Gross Annual Turnover', f"Rs.{applicant_data['turnover']:,}"],
+        ['Net Monthly Income', f"Rs.{applicant_data['income']:,}"],
     ]
-    
+
     table = Table(data, colWidths=[2.5*inch, 4*inch])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f4788')),
@@ -480,13 +480,13 @@ def generate_application_pdf(applicant_data):
         ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
     ]))
-    
+
     elements.append(table)
     elements.append(Spacer(1, 20))
-    
+
     elements.append(Paragraph("Document Status", heading_style))
-    elements.append(Paragraph(f"PAN Card: {'✓ Uploaded' if st.session_state.documents_uploaded['pan'] else '✗ Pending'}", styles['Normal']))
-    elements.append(Paragraph(f"Bank Statement: {'✓ Uploaded' if st.session_state.documents_uploaded['bank'] else '✗ Pending'}", styles['Normal']))
+    elements.append(Paragraph(f"PAN Card: {'Uploaded' if st.session_state.documents_uploaded['pan'] else 'Pending'}", styles['Normal']))
+    elements.append(Paragraph(f"Bank Statement: {'Uploaded' if st.session_state.documents_uploaded['bank'] else 'Pending'}", styles['Normal']))
     elements.append(Spacer(1, 30))
     
     elements.append(Paragraph("<i>This is a system-generated document. No signature required.</i>", styles['Italic']))
@@ -521,7 +521,7 @@ def generate_sanction_letter_pdf(applicant_data):
         ['Loan Details', ''],
         ['Application ID', applicant_data['application_id']],
         ['Applicant Name', applicant_data['name']],
-        ['Sanctioned Amount', f"₹{applicant_data.get('loan_amount', 0):,}"],
+        ['Sanctioned Amount', f"Rs.{applicant_data.get('loan_amount', 0):,}"],
         ['Approval Date', applicant_data.get('approved_date', 'N/A')],
         ['Disbursement Date', applicant_data.get('disbursement_date', 'Processing')],
     ]
@@ -589,8 +589,8 @@ def generate_application_submission_pdf(applicant_data, documents_status):
         ['Full Name', applicant_data['name']],
         ['Phone Number', applicant_data['phone']],
         ['Age', str(applicant_data['age'])],
-        ['Gross Annual Turnover', f"₹{applicant_data['turnover']:,}"],
-        ['Net Monthly Income', f"₹{applicant_data['income']:,}"],
+        ['Gross Annual Turnover', f"Rs.{applicant_data['turnover']:,}"],
+        ['Net Monthly Income', f"Rs.{applicant_data['income']:,}"],
         ['Application Status', 'Submitted - Under Review']
     ]
     
@@ -613,8 +613,8 @@ def generate_application_submission_pdf(applicant_data, documents_status):
     
     doc_data = [
         ['Document Type', 'Status'],
-        ['PAN Card', '✓ Submitted' if documents_status.get('pan') else '✗ Pending'],
-        ['Bank Statement', '✓ Submitted' if documents_status.get('bank') else '✗ Pending']
+        ['PAN Card', 'Submitted' if documents_status.get('pan') else 'Pending'],
+        ['Bank Statement', 'Submitted' if documents_status.get('bank') else 'Pending']
     ]
     
     doc_table = Table(doc_data, colWidths=[3*inch, 3.5*inch])
@@ -698,11 +698,11 @@ def generate_offer_letter_pdf(applicant_data, emi_details=None):
         ['Offer Details', ''],
         ['Application ID', applicant_data['application_id']],
         ['Applicant Name', applicant_data['name']],
-        ['Loan Amount Offered', f"₹{loan_amount:,}"],
+        ['Loan Amount Offered', f"Rs.{loan_amount:,}"],
         ['Interest Rate', f"{interest_rate}% per annum"],
         ['Loan Tenure', f"{tenure_months} months ({tenure_months//12} years)"],
-        ['Monthly EMI', f"₹{monthly_emi:,.0f}"],
-        ['Processing Fee', f"₹{loan_amount * 0.02:,.0f} (2% of loan amount)"],
+        ['Monthly EMI', f"Rs.{monthly_emi:,.0f}"],
+        ['Processing Fee', f"Rs.{loan_amount * 0.02:,.0f} (2% of loan amount)"],
         ['Offer Validity', '15 days from date of issue']
     ]
     
@@ -1010,16 +1010,6 @@ if st.session_state.workflow_stream == "New Applicant":
                     st.session_state.current_stage = "ELIGIBILITY_CHECK"
                     st.session_state.stage_timestamps["ELIGIBILITY_CHECK"] = datetime.now()
                     st.success(f"✅ Eligibility Passed! Application ID: {app_id}")
-                    
-                    # Generate application PDF
-                    pdf_buffer = generate_application_pdf(st.session_state.applicant_data)
-                    st.download_button(
-                        label="📄 Download Application Form",
-                        data=pdf_buffer,
-                        file_name=f"FlexiLoans_Application_{app_id}.pdf",
-                        mime="application/pdf"
-                    )
-                    
                     st.rerun()
     
     else:
@@ -1639,6 +1629,102 @@ Keep responses clear, concise, and action-oriented. Adapt your tone based on cus
             
             st.rerun()
 
+# STREAM C: DIRECT CHAT WITH FLEXIBOT
+elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
+    st.subheader("💬 Chat with FlexiBot")
+    st.info("Ask FlexiBot anything — loan eligibility, EMI calculations, documents, or the application process.")
+
+    if not st.session_state.messages:
+        st.session_state.messages = [{
+            "role": "model",
+            "content": (
+                "Hello! I'm FlexiBot, your AI assistant for FlexiLoans. I can help you with:\n\n"
+                "• Loan eligibility & requirements\n"
+                "• EMI calculations & interest rates\n"
+                "• Document requirements\n"
+                "• Application process guidance\n"
+                "• General financial advice\n\n"
+                "What would you like to know?"
+            )
+        }]
+        st.session_state.chat_active = True
+
+    for message in st.session_state.messages:
+        avatar = "🤝" if message["role"] == "model" else "👤"
+        with st.chat_message(message["role"], avatar=avatar):
+            st.write(message["content"])
+
+    if user_input := st.chat_input("Ask FlexiBot anything about loans..."):
+        st.session_state.chat_active = True
+        st.session_state.messages.append({"role": "user", "content": user_input})
+
+        with st.chat_message("user", avatar="👤"):
+            st.write(user_input)
+
+        with st.spinner("FlexiBot responding..."):
+            system_instruction = """You are 'FlexiBot', a friendly and expert AI assistant for FlexiLoans — India's leading digital lending platform for businesses.
+
+ABOUT FLEXILOANS:
+- Digital-first NBFC providing business loans across India
+- Loan range: Rs.1 Lakh to Rs.2 Crore
+- Quick 2-3 business day processing
+- Contact: support@flexiloans.com | 1800-XXX-XXXX
+
+ELIGIBILITY CRITERIA:
+- Age: 21 to 65 years
+- Gross Annual Business Turnover: minimum Rs.12,00,000
+- Net Monthly Income: minimum Rs.50,000
+- Business must be operational
+
+REQUIRED DOCUMENTS:
+- PAN Card (mandatory)
+- Latest 6-month Bank Statement (mandatory)
+- Business Registration Certificate
+- GST Returns (if applicable)
+- Income Tax Returns (last 2 years)
+
+LOAN PRODUCTS:
+- Business Term Loan: Fixed tenure 12-60 months, 10-18% p.a.
+- Working Capital Loan: Flexible revolving credit
+- Equipment Finance: Up to 80% of asset value
+
+YOUR ROLE:
+1. Answer questions about FlexiLoans products, eligibility, and the process
+2. Help users assess whether they qualify
+3. Explain document requirements clearly
+4. Calculate EMIs on request using: EMI = P x r x (1+r)^n / ((1+r)^n - 1), where r = monthly rate, n = months
+5. Provide general financial guidance relevant to Indian business owners
+6. Encourage eligible users to select 'New Applicant' from the sidebar to apply
+7. Guide existing applicants to select 'Existing Applicant' to check their status
+
+Be conversational, warm, and concise. Use simple language suitable for Indian SME owners.
+"""
+
+            chat_history = []
+            for msg in st.session_state.messages[:-1]:
+                if msg["role"] == "user":
+                    chat_history.append(types.Content(role="user", parts=[types.Part.from_text(text=msg["content"])]))
+                else:
+                    chat_history.append(types.Content(role="model", parts=[types.Part.from_text(text=msg["content"])]))
+
+            chat_session = client.chats.create(
+                model="gemini-2.5-flash",
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    temperature=0.4
+                ),
+                history=chat_history
+            )
+
+            response = chat_session.send_message(user_input)
+
+        st.session_state.messages.append({"role": "model", "content": response.text})
+
+        with st.chat_message("model", avatar="🤝"):
+            st.write(response.text)
+
+        st.rerun()
+
 # Sidebar metrics
 if st.session_state.chat_active:
     st.sidebar.markdown("---")
@@ -1654,6 +1740,8 @@ if st.session_state.chat_active:
             st.sidebar.info("⏳ Customer: IN PROGRESS")
         elif customer_type == "REJECTED":
             st.sidebar.error("❌ Customer: REJECTED")
+    elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
+        st.sidebar.info("💬 Direct Chat Mode")
     else:
         st.sidebar.info("🆕 Customer: NEW APPLICANT")
     
