@@ -2843,19 +2843,51 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
         st.session_state.messages = st.session_state.flexibot_messages
 
     if not st.session_state.messages:
-        welcome = (
-            "Hi! I'm **FlexiBot**, your complete FlexiLoans agent. I handle everything — no need to navigate anywhere yourself.\n\n"
-            "Just tell me what you need:\n"
-            "- **'I want to apply for a loan'** — I'll guide you step by step\n"
-            "- **Share your Application ID** (FL-2026-XXXX) — I'll fetch your status instantly\n"
-            "- **Share your phone number** — I'll find your application\n"
-            "- **'Calculate EMI for 5 lakh, 12%, 24 months'** — instant calculation\n"
-            "- **'Am I eligible?'** — share your age, income & turnover\n\n"
-            "What can I help you with today?"
-        )
+        welcome = "👋 Hi! I'm **FlexiBot** — your FlexiLoans assistant.\n\nWhat would you like to do today?"
         st.session_state.messages = [{"role": "model", "content": welcome}]
         st.session_state.flexibot_messages = st.session_state.messages.copy()
         st.session_state.chat_active = True
+
+    # ── Quick-reply intent buttons (shown only before user has typed anything) ──
+    user_spoke = any(m["role"] == "user" for m in st.session_state.messages)
+    if not user_spoke:
+        st.markdown("""
+<div style="background:linear-gradient(135deg,#1B365D,#1e3f6f);padding:18px 22px;
+            border-radius:12px;border-left:5px solid #00B4D8;margin-bottom:12px">
+  <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:0 0 12px 0;
+             text-transform:uppercase;letter-spacing:0.08em;font-weight:600">
+     Choose what you need — or just type below
+  </p>
+</div>""", unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        c3, c4 = st.columns(2)
+        c5, _  = st.columns(2)
+        with c1:
+            if st.button("🆕  Apply for a Loan", use_container_width=True, key="qi_apply"):
+                st.session_state.messages.append({"role": "user", "content": "I want to apply for a loan"})
+                st.session_state.flexibot_messages = st.session_state.messages.copy()
+                st.rerun()
+        with c2:
+            if st.button("📋  Track My Application", use_container_width=True, key="qi_track"):
+                st.session_state.messages.append({"role": "user", "content": "I want to check my existing application status"})
+                st.session_state.flexibot_messages = st.session_state.messages.copy()
+                st.rerun()
+        with c3:
+            if st.button("💡  Get Loan Recommendation", use_container_width=True, key="qi_reco"):
+                st.session_state.messages.append({"role": "user", "content": "Please recommend the best loan amount for me"})
+                st.session_state.flexibot_messages = st.session_state.messages.copy()
+                st.rerun()
+        with c4:
+            if st.button("🧮  Calculate EMI", use_container_width=True, key="qi_emi"):
+                st.session_state.messages.append({"role": "user", "content": "Help me calculate EMI for a loan"})
+                st.session_state.flexibot_messages = st.session_state.messages.copy()
+                st.rerun()
+        with c5:
+            if st.button("💰  Financial Advice", use_container_width=True, key="qi_advice"):
+                st.session_state.messages.append({"role": "user", "content": "Give me financial advice and guidance"})
+                st.session_state.flexibot_messages = st.session_state.messages.copy()
+                st.rerun()
+        st.markdown("---")
 
     # ── Pending navigation banner ─────────────────────────────────────────────
     if st.session_state.pending_nav:
@@ -3097,7 +3129,7 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
             all_conv = " ".join(m["content"] for m in st.session_state.messages).lower()
             apply_intent  = any(kw in all_conv for kw in ["apply","start application","get a loan","want a loan","need a loan","take a loan"])
             reco_intent   = any(kw in all_conv for kw in ["recommend","suggest","how much","how much loan","what loan","afford","best loan","suitable loan"])
-            status_intent = any(kw in all_conv for kw in ["fl-2026","application id","status","existing","my loan","check application"])
+            status_intent = any(kw in all_conv for kw in ["fl-2026","application id","status","existing","my loan","check application","track","existing application"])
 
             # ── Missing fields — only for explicit apply intent ───────────────
             required_fields = {"name","phone","age","income","turnover"}
@@ -3184,11 +3216,13 @@ APPLY ("apply", "want a loan", "get a loan", "start application"):
   - Once all 5 + eligible: "PAN Card upload section is now visible just below this chat"
   - If INELIGIBLE: explain exactly which criterion failed + what to do to qualify
 
-STATUS CHECK (found by ID or phone):
+TRACK/STATUS INTENT ("track", "existing application", "check status", "my application"):
+  - Ask: "Please share your Application ID (FL-2026-XXXX) or your registered 10-digit phone number"
+  - Once provided, look up and report exact status
   - APPROVED: congratulate, state loan amount + disbursement date, offer top-up
-  - IN_PROGRESS with pending docs: list docs, say "I've placed a navigation button above — click to upload directly"
-  - IN_PROGRESS no pending docs: give estimated date
-  - REJECTED: give reason + improvement plan + reapply date
+  - IN_PROGRESS with pending docs: list exactly which docs missing, say "I've placed a navigation button above — click it to upload directly to your application"
+  - IN_PROGRESS no pending docs: give estimated completion date
+  - REJECTED: give reason + improvement plan + exact reapply date
 
 EMI CALC: Calculate inline. Then ask if they want to apply.
 FINANCIAL ADVICE: Answer fully in chat. Reference sidebar tool for detailed exploration.
