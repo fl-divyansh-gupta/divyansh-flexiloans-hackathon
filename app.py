@@ -1479,7 +1479,9 @@ def extract_profile_from_messages(messages):
     all_text = " ".join(m["content"] for m in messages)
     profile = {}
 
-    phones = _re.findall(r'\b(\d{10})\b', all_text)
+    # Extract phone (10-digit numbers from user messages only)
+    user_text = " ".join(m["content"] for m in messages if m["role"] == "user")
+    phones = _re.findall(r'\b(\d{10})\b', user_text)
     if phones:
         profile["phone"] = phones[-1]
 
@@ -1487,12 +1489,14 @@ def extract_profile_from_messages(messages):
     if app_ids:
         profile["application_id"] = app_ids[-1]
 
-    # Only user messages for financial figures to avoid picking up bot examples
-    user_text = " ".join(m["content"] for m in messages if m["role"] == "user")
+    # Financial figures from user messages — exclude phone numbers to avoid collision
+    phone_set = set(phones)
     raw_nums = [int(n.replace(",", "")) for n in _re.findall(r'[\d,]+', user_text)
-                if n.replace(",", "").isdigit() and len(n.replace(",", "")) >= 4]
+                if n.replace(",", "").isdigit()
+                and len(n.replace(",", "")) >= 4
+                and n.replace(",", "") not in phone_set]   # skip phone numbers
     if raw_nums:
-        turnovers = [n for n in raw_nums if n >= 500000]
+        turnovers = [n for n in raw_nums if n >= 500000 and n not in [int(p) for p in phone_set]]
         incomes   = [n for n in raw_nums if 10000 <= n < 500000]
         ages      = [n for n in raw_nums if 18 <= n <= 80]
         if turnovers: profile["turnover"] = max(turnovers)
@@ -1500,13 +1504,12 @@ def extract_profile_from_messages(messages):
         if ages:      profile["age"]      = ages[0]
 
     name_match = _re.search(
-        r"(?:my name is|i am|i'm|name[:\s]+)\s*([A-Z][a-zA-Z]+(?: [A-Z][a-zA-Z]+)*)",
+        r"(?:my name is|i am|i'm|name[:\s]+|i'm)\s*([A-Z][a-zA-Z\s]{1,30}?)(?:\s*[,.\n]|$)",
         all_text, _re.IGNORECASE
     )
     if name_match:
         candidate = name_match.group(1).strip()
-        # reject common false positives
-        if candidate.lower() not in ("flexibot", "flexiloans", "india", "nbfc"):
+        if candidate.lower() not in ("flexibot", "flexiloans", "india", "nbfc", "a", "an"):
             profile["name"] = candidate
 
     return profile
@@ -3018,17 +3021,16 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
             reco_context = ""
             gathered = extract_profile_from_messages(st.session_state.messages)
             if gathered.get("income") or gathered.get("turnover"):
-                if any(kw in user_input.lower() for kw in ["recommend","suggest","how much","afford","eligible","best loan","smart"]):
-                    prof = {"income": gathered.get("income",75000), "turnover": gathered.get("turnover",15000000), "age": gathered.get("age",35)}
-                    reco = generate_smart_recommendations(prof, st.session_state.credit_score_input)
-                    reco_context = (
-                        f"\nSMART RECOMMENDATION: Optimal loan Rs.{reco['optimal_loan']['amount']:,.0f} "
-                        f"at {reco['optimal_loan']['interest_rate']}% p.a. | "
-                        f"Max safe EMI Rs.{reco['optimal_loan']['max_emi']:,.0f}/month | "
-                        f"Tenure: {reco['tenure']['months']} months | "
-                        f"Monthly EMI: Rs.{reco['tenure']['monthly_emi']:,.0f}\n"
-                        "Present with explanation.\n"
-                    )
+                prof = {"income": gathered.get("income",75000), "turnover": gathered.get("turnover",15000000), "age": gathered.get("age",35)}
+                reco = generate_smart_recommendations(prof, st.session_state.credit_score_input)
+                reco_context = (
+                    f"\nSMART RECOMMENDATION: Optimal loan Rs.{reco['optimal_loan']['amount']:,.0f} "
+                    f"at {reco['optimal_loan']['interest_rate']}% p.a. | "
+                    f"Max safe EMI Rs.{reco['optimal_loan']['max_emi']:,.0f}/month | "
+                    f"Tenure: {reco['tenure']['months']} months | "
+                    f"Monthly EMI: Rs.{reco['tenure']['monthly_emi']:,.0f}\n"
+                    "Use this data when presenting recommendations.\n"
+                )
 
             # ── Application / phone lookup ────────────────────────────────────
             app_context_block, detected_nav = build_application_context(
@@ -3045,16 +3047,38 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
                     profile_lines.append(f"{label}: {val}")
             gathered_block = ("PROFILE COLLECTED IN THIS CHAT: " + " | ".join(profile_lines)) if profile_lines else ""
 
-            # ── Missing fields for new applicant flow ─────────────────────────
+            # ── Detect user intent ────────────────────────────────────────────
+            all_conv = " ".join(m["content"] for m in st.session_state.messages).lower()
+            apply_intent  = any(kw in all_conv for kw in ["apply","start application","get a loan","want a loan","need a loan","take a loan"])
+            reco_intent   = any(kw in all_conv for kw in ["recommend","suggest","how much","how much loan","what loan","afford","best loan","suitable loan"])
+            status_intent = any(kw in all_conv for kw in ["fl-2026","application id","status","existing","my loan","check application"])
+
+            # ── Missing fields — only for explicit apply intent ───────────────
             required_fields = {"name","phone","age","income","turnover"}
             missing_fields  = required_fields - set(gathered.keys())
             missing_note = ""
-            if missing_fields and any(kw in " ".join(m["content"] for m in st.session_state.messages).lower()
-                                      for kw in ["apply","loan","want","need","start"]):
-                missing_note = f"STILL NEED FROM USER: {', '.join(missing_fields)}. Ask for the next missing field."
+            if apply_intent and missing_fields:
+                missing_note = f"APPLY MODE ACTIVE — still need: {', '.join(missing_fields)}. Ask for the next missing field only."
+            elif reco_intent and not apply_intent:
+                reco_needed = {"income","turnover","age"} - set(gathered.keys())
+                if reco_needed:
+                    missing_note = f"RECOMMENDATION MODE — need {', '.join(reco_needed)} to compute. Ask for just these, do NOT ask for name/phone yet."
+
+            # ── Compute recommendation eagerly if we have income ──────────────
+            if reco_intent and gathered.get("income") and not reco_context:
+                prof = {"income": gathered.get("income",75000), "turnover": gathered.get("turnover", gathered.get("income",75000)*20), "age": gathered.get("age",35)}
+                reco = generate_smart_recommendations(prof, st.session_state.credit_score_input)
+                reco_context = (
+                    f"\nSMART RECOMMENDATION: Optimal loan Rs.{reco['optimal_loan']['amount']:,.0f} "
+                    f"at {reco['optimal_loan']['interest_rate']}% p.a. | "
+                    f"Max safe EMI Rs.{reco['optimal_loan']['max_emi']:,.0f}/month | "
+                    f"Recommended Tenure: {reco['tenure']['months']} months | "
+                    f"Monthly EMI: Rs.{reco['tenure']['monthly_emi']:,.0f}\n"
+                    "Present this as a clear recommendation table. Then ask if they want to apply.\n"
+                )
 
             system_instruction = f"""You are FlexiBot — the complete, intelligent virtual loan agent for FlexiLoans (India's leading digital NBFC for business loans). You guide every customer end-to-end with zero handoff.
-Date: 2026-05-25
+Date: 2026-05-26
 
 {gathered_block}
 {missing_note}
@@ -3064,30 +3088,37 @@ Date: 2026-05-25
 
 ━━━ PORTAL KNOWLEDGE ━━━
 ELIGIBILITY: Age 21–65 | Annual Turnover ≥ Rs.12,00,000 | Monthly Income ≥ Rs.50,000
-MANDATORY DOCS: PAN Card + 6-month Bank Statement
-OPTIONAL DOCS: Business Registration, GST Returns, ITR (last 2 years)
+MANDATORY DOCS: PAN Card only (uploaded directly in this chat)
 LOAN RANGE: Rs.1 Lakh – Rs.2 Crore | 12–60 months | 10–18% p.a.
 EMI RULE: Safe EMI = 40% of monthly income
 TOP-UP (approved customers): max(75% of loan, 3× income) | Rate+0.5% | Tenure 6–24 months | 24-hr disbursal | 1% fee
 STATUSES → APPROVED: celebrate + offer top-up | IN_PROGRESS: check pending docs | REJECTED: explain + improvement plan + reapply date
 
-━━━ HOW TO BEHAVE ━━━
-APPLY FLOW: Collect name→age→phone→income→turnover one at a time. Once all 5 collected, check eligibility instantly.
-  - If ELIGIBLE: say "Great news — you qualify! A PAN Card upload section has appeared just below our chat. Please upload your PAN Card there and your loan will be approved instantly!"
-  - If INELIGIBLE: explain which criteria failed, give improvement advice, do NOT ask for documents.
-STATUS CHECK: Use LIVE APPLICATION DATA. Never say "I can't access" — you have all data. Give exact stage + next action.
-PHONE LOOKUP: If phone found in data → greet by name, give status, offer action.
-NOT FOUND: Say clearly "I could not find application [ID]. Please verify — it looks like FL-2026-XXXX."
-EMI: Use LIVE EMI RESULT above. If not computed, ask amount/rate/tenure.
-TOP-UP: For approved customers — calculate amount, quote EMI, tell "I've queued the top-up application — click the button."
+━━━ INTENT-BASED BEHAVIOUR ━━━
+
+RECOMMENDATION INTENT ("recommend", "suggest", "how much", "afford"):
+  - Ask for income + turnover + age ONLY (not name or phone yet)
+  - Use SMART RECOMMENDATION data above to show a table: Optimal Loan | EMI | Tenure | Rate
+  - After showing recommendation, ask: "Would you like to apply for this loan?"
+  - DO NOT start collecting name/phone unless user says yes
+
+APPLY INTENT ("apply", "want a loan", "get a loan"):
+  - Collect name → age → phone → income → turnover one at a time
+  - Phone must be exactly 10 digits — if not, ask again
+  - Once all 5 collected + eligible: say "Great news! The PAN Card upload section is now visible just below our chat — please upload to get instant approval!"
+  - If INELIGIBLE: explain which criteria failed, give improvement tips
+
+STATUS CHECK: Use LIVE APPLICATION DATA. Never say you can't access data.
+EMI CALC: Use LIVE EMI RESULT if available.
+TOP-UP: For approved customers only.
 
 RULES:
-1. Never say "I don't have access" or "call support" — solve everything yourself
-2. One question at a time when collecting profile data
-3. For new applicants — NEVER tell them to go to another section; the PAN upload section appears automatically in this chat
-4. Use Rs. not rupee symbol
-5. Be warm, specific, action-oriented
-6. End every response with one clear next step
+1. NEVER ask for name/phone when user only wants recommendations
+2. NEVER confuse a 10-digit phone number with annual turnover
+3. One question at a time
+4. Use Rs. not ₹ symbol
+5. Be warm, concise, action-oriented
+6. End every response with exactly one clear next step
 """
 
             chat_history = []
