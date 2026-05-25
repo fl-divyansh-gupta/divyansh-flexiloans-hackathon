@@ -54,6 +54,10 @@ if "show_financial_guidance" not in st.session_state:
     st.session_state.show_financial_guidance = False
 if "credit_score_input" not in st.session_state:
     st.session_state.credit_score_input = 700
+if "recommendations_generated" not in st.session_state:
+    st.session_state.recommendations_generated = False
+if "smart_recommendations" not in st.session_state:
+    st.session_state.smart_recommendations = None
 
 # Sidebar - Stream Selection
 st.sidebar.title("🏦 FlexiLoans Onboarding")
@@ -755,6 +759,197 @@ render_emi_calculator()
 
 # Render Financial Guidance in sidebar
 render_financial_guidance()
+
+# Render Smart Recommendations in sidebar
+def generate_smart_recommendations(applicant_data, credit_score=700):
+    """Generate personalized loan and product recommendations"""
+    
+    monthly_income = applicant_data.get('income', 50000)
+    annual_turnover = applicant_data.get('turnover', 12000000)
+    age = applicant_data.get('age', 35)
+    
+    recommendations = {
+        "optimal_loan": {},
+        "tenure": {},
+        "cross_sell": [],
+        "upsell": {},
+        "next_actions": []
+    }
+    
+    # 1. OPTIMAL LOAN AMOUNT
+    max_emi = monthly_income * 0.40
+    interest_rate = 12.0
+    tenure_months = 24
+    monthly_rate = interest_rate / (12 * 100)
+    optimal_loan_amount = max_emi * (((1 + monthly_rate) ** tenure_months) - 1) / (monthly_rate * ((1 + monthly_rate) ** tenure_months))
+    
+    if credit_score >= 750:
+        optimal_loan_amount *= 1.2
+        interest_rate = 10.5
+    elif credit_score >= 700:
+        optimal_loan_amount *= 1.1
+        interest_rate = 11.5
+    elif credit_score < 650:
+        optimal_loan_amount *= 0.8
+        interest_rate = 14.0
+    
+    optimal_loan_amount = min(optimal_loan_amount, annual_turnover * 0.25)
+    optimal_loan_amount = max(optimal_loan_amount, 100000)
+    optimal_loan_amount = min(optimal_loan_amount, 5000000)
+    
+    recommendations["optimal_loan"] = {
+        "amount": round(optimal_loan_amount, -3),
+        "interest_rate": interest_rate,
+        "reasoning": f"Based on 40% EMI-to-income ratio",
+        "max_emi": round(max_emi, 0)
+    }
+    
+    # 2. TENURE RECOMMENDATION
+    if age < 30:
+        recommended_tenure = 36
+        tenure_reason = "Longer tenure for lower EMI"
+    elif age < 45:
+        recommended_tenure = 24
+        tenure_reason = "Balanced tenure"
+    else:
+        recommended_tenure = 12
+        tenure_reason = "Shorter tenure recommended"
+    
+    emi_result = calculate_emi(optimal_loan_amount, interest_rate, recommended_tenure)
+    
+    recommendations["tenure"] = {
+        "months": recommended_tenure,
+        "years": recommended_tenure / 12,
+        "reasoning": tenure_reason,
+        "monthly_emi": emi_result["emi"],
+        "total_interest": emi_result["total_interest"]
+    }
+    
+    # 3. CROSS-SELL
+    cross_sell_products = []
+    
+    insurance_premium = optimal_loan_amount * 0.005
+    cross_sell_products.append({
+        "product": "Loan Protection Insurance",
+        "description": "Covers loan in emergencies",
+        "cost": f"₹{insurance_premium:,.0f}/year",
+        "benefit": "Peace of mind",
+        "priority": "High",
+        "icon": "🛡️"
+    })
+    
+    if credit_score >= 700:
+        credit_limit = min(monthly_income * 3, 500000)
+        cross_sell_products.append({
+            "product": "Premium Credit Card",
+            "description": "Rewards credit card",
+            "cost": "Free first year",
+            "benefit": f"Limit ₹{credit_limit:,.0f}, 2% cashback",
+            "priority": "Medium",
+            "icon": "💳"
+        })
+    
+    if annual_turnover >= 20000000:
+        credit_line = annual_turnover * 0.15
+        cross_sell_products.append({
+            "product": "Business Credit Line",
+            "description": "Flexible business credit",
+            "cost": "Interest on usage only",
+            "benefit": f"Up to ₹{credit_line:,.0f}",
+            "priority": "High",
+            "icon": "💼"
+        })
+    
+    recommendations["cross_sell"] = cross_sell_products
+    
+    # 4. UPSELL
+    if credit_score >= 750 and monthly_income >= 75000:
+        higher_loan = optimal_loan_amount * 1.5
+        higher_emi = calculate_emi(higher_loan, interest_rate, recommended_tenure)
+        
+        recommendations["upsell"] = {
+            "qualified": True,
+            "higher_amount": round(higher_loan, -3),
+            "additional_amount": round(higher_loan - optimal_loan_amount, -3),
+            "new_emi": higher_emi["emi"],
+            "reasoning": "Excellent credit qualifies for more"
+        }
+    else:
+        recommendations["upsell"] = {"qualified": False}
+    
+    # 5. NEXT ACTIONS
+    next_actions = [
+        {
+            "action": "Complete Application",
+            "priority": "High",
+            "icon": "🎯",
+            "description": "Fill eligibility form",
+            "time_estimate": "2 min"
+        },
+        {
+            "action": "Upload Documents",
+            "priority": "High",
+            "icon": "📄",
+            "description": "PAN & Bank Statement",
+            "time_estimate": "2 min"
+        }
+    ]
+    
+    if credit_score < 750:
+        next_actions.append({
+            "action": "Improve Credit Score",
+            "priority": "Medium",
+            "icon": "📈",
+            "description": f"From {credit_score} to 750+",
+            "time_estimate": "3-6 months"
+        })
+    
+    recommendations["next_actions"] = next_actions
+    
+    return recommendations
+
+def render_smart_recommendations():
+    """Render Smart Recommendation Engine"""
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🎯 Smart Recommendations")
+    
+    with st.sidebar.expander("AI Loan Advisor", expanded=False):
+        rec_income = st.number_input("Income (₹)", min_value=10000, value=50000, step=5000, key="rec_income")
+        rec_turnover = st.number_input("Turnover (₹)", min_value=1000000, value=12000000, step=1000000, key="rec_turnover")
+        rec_age = st.number_input("Age", min_value=21, max_value=65, value=35, key="rec_age")
+        rec_credit = st.slider("Credit Score", 300, 900, 700, 10, key="rec_credit")
+        
+        if st.button("🔮 Generate", key="gen_rec", type="primary"):
+            temp_data = {'income': rec_income, 'turnover': rec_turnover, 'age': rec_age}
+            st.session_state.smart_recommendations = generate_smart_recommendations(temp_data, rec_credit)
+            st.session_state.recommendations_generated = True
+        
+        if st.session_state.recommendations_generated and st.session_state.smart_recommendations:
+            rec = st.session_state.smart_recommendations
+            
+            st.markdown("### 💰 Optimal Loan")
+            st.metric("Amount", f"₹{rec['optimal_loan']['amount']:,.0f}")
+            st.caption(f"@ {rec['optimal_loan']['interest_rate']}% p.a.")
+            
+            st.markdown("### ⏱️ Tenure")
+            st.metric("Best", f"{rec['tenure']['years']:.0f} years")
+            st.write(f"EMI: ₹{rec['tenure']['monthly_emi']:,.0f}")
+            
+            if rec['cross_sell']:
+                st.markdown("### 🎁 Products")
+                for p in rec['cross_sell'][:2]:
+                    st.write(f"{p['icon']} **{p['product']}**")
+                    st.caption(p['benefit'])
+            
+            if rec['upsell']['qualified']:
+                st.markdown("### 🚀 Upsell")
+                st.success(f"Qualify for ₹{rec['upsell']['higher_amount']:,.0f}!")
+            
+            st.markdown("### ✅ Next Steps")
+            for a in rec['next_actions'][:3]:
+                st.write(f"{a['icon']} {a['action']}")
+
+render_smart_recommendations()
 
 # STREAM A: NEW APPLICANT
 if st.session_state.workflow_stream == "New Applicant":

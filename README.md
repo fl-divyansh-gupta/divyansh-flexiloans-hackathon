@@ -87,6 +87,38 @@ Built for hackathon evaluation, this system demonstrates enterprise-grade loan p
    - Overall health score (0-100)
    - Personalized improvement plan
 
+### 🎯 Smart Recommendation Engine (NEW!)
+
+1. **Loan Amount Optimizer**
+   - AI-powered optimal loan calculation
+   - Credit score-based adjustments
+   - Income and turnover validation
+   - Personalized interest rate recommendations
+
+2. **Tenure Recommendation**
+   - Age-based tenure optimization
+   - EMI affordability analysis
+   - Total interest minimization
+   - Customized repayment schedules
+
+3. **Product Cross-Sell**
+   - Loan Protection Insurance
+   - Premium Credit Cards (for qualified customers)
+   - Business Credit Lines (for high-turnover businesses)
+   - Tax-Saving Fixed Deposits
+
+4. **Upsell Opportunities**
+   - Higher loan amount eligibility
+   - Premium customer identification
+   - Enhanced terms for qualified applicants
+   - Upgrade path recommendations
+
+5. **Next Best Action**
+   - Prioritized action items
+   - Time estimates for each step
+   - Completion tracking
+   - Personalized guidance
+
 ### 📈 Progress Tracking
 
 - **5-Stage Visual Pipeline**: Not Started → Eligibility → Documents → Verification → Approved
@@ -409,7 +441,47 @@ The application will open automatically in your default browser at `http://local
 - Savings rate analysis
 - Debt-to-income ratio
 
-### 5. PDF Generation System
+### 5. Smart Recommendation Engine (NEW!)
+
+**AI-Powered Personalization:**
+
+#### Loan Amount Optimizer
+- Calculates optimal loan based on 40% EMI-to-income ratio
+- Credit score multipliers (750+: 1.2x, 700-749: 1.1x, <650: 0.8x)
+- Business turnover validation (max 25%)
+- Dynamic interest rate assignment
+- Range: ₹1L - ₹50L
+
+#### Tenure Recommendation
+- Age-based optimization:
+  - <30 years: 36 months (lower EMI)
+  - 30-45 years: 24 months (balanced)
+  - >45 years: 12 months (faster clearance)
+- Shows monthly EMI and total interest
+- Explains reasoning for recommendation
+
+#### Product Cross-Sell
+- **Loan Protection Insurance**: Always recommended (0.5% of loan)
+- **Premium Credit Card**: For credit score ≥700 (3x income limit)
+- **Business Credit Line**: For turnover ≥₹2Cr (15% of turnover)
+- **Tax-Saving FD**: For income >₹75k
+- Priority-based recommendations
+
+#### Upsell Opportunities
+- Identifies qualified customers (score ≥750, income ≥₹75k)
+- Offers 50% higher loan amount
+- Shows new EMI and additional amount
+- Provides qualification reasoning
+- Improvement tips for non-qualified
+
+#### Next Best Action
+- Prioritized action list (Critical/High/Medium/Low)
+- Time estimates for each action
+- Context-aware suggestions
+- Completion tracking
+- Direct integration with application flow
+
+### 6. PDF Generation System
 
 **Application Form PDF**:
 - Applicant details table
@@ -632,11 +704,13 @@ For questions or support:
 
 ## 📊 Project Stats
 
-- **Lines of Code**: ~2,500+
-- **Components**: 15+ interactive features
+- **Lines of Code**: ~3,500+
+- **Components**: 20+ interactive features
 - **PDF Templates**: 4 professional documents
 - **Test Cases**: 7 sample profiles
 - **API Integrations**: 2 (Gemini, ReportLab)
+- **Financial Tools**: 5 advisory modules
+- **Recommendation Engine**: 5 AI-powered features
 
 ---
 
