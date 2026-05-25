@@ -131,6 +131,13 @@ streamlit run app.py
 
 ---
 
+## Roadmap
+
+- **Multilingual Support** — Hindi, Tamil, Telugu language selector; bot responds in selected language
+- **Email / SMS Sync** — automated status notifications and document reminders via email and SMS
+
+---
+
 ## Project Structure
 
 ```
