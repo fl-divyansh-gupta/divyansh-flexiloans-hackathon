@@ -147,7 +147,7 @@ streamlit run app.py
 
 - **Multilingual Support** — Hindi, Tamil, Telugu language selector; bot responds in selected language
 - **Email / SMS Sync** — automated status notifications and document reminders via email and SMS
-- **Voice Bot Integration** — speech-to-text input and text-to-speech responses so customers can interact with FlexiBot entirely by voice; enables WhatsApp Voice and IVR channel support
+- **Voice Bot Integration** — speech-to-text input and text-to-speech responses so customers can interact with FlexiBot entirely by voice; enables WhatsApp Voice and IVR channel support; on complex or sensitive cases (fraud suspicion, legal disputes, critical rejections) FlexiBot detects the escalation trigger and seamlessly transfers the customer to a live human agent with full conversation context handed over
 
 ---
 
