@@ -58,18 +58,20 @@ html, body, [data-testid="stApp"], .main {
 #MainMenu, footer, header { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
 
-/* ── Hide only the << collapse button inside sidebar; keep >> expand visible ── */
-[data-testid="stSidebar"] button[kind="header"],
+/* ── Force sidebar always open — cannot be collapsed ── */
+[data-testid="stSidebar"] {
+  transform: translateX(0) !important;
+  left: 0 !important;
+  min-width: 244px !important;
+  width: 244px !important;
+  display: block !important;
+  visibility: visible !important;
+}
+/* Hide the << collapse button so user can never close it */
+[data-testid="stSidebar"] button[aria-label="Collapse sidebar"],
 [data-testid="stSidebar"] [data-testid="baseButton-header"],
 button[aria-label="Collapse sidebar"] { display: none !important; }
-/* Make >> expand button prominent when sidebar is closed */
-[data-testid="collapsedControl"] {
-  visibility: visible !important;
-  background: #00B4D8 !important;
-  border-radius: 0 8px 8px 0 !important;
-  width: 28px !important;
-  top: 50% !important;
-}
+[data-testid="collapsedControl"] { display: none !important; }
 
 
 /* ── Page title ── */
