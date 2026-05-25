@@ -493,6 +493,16 @@ if "flexibot_messages" not in st.session_state:
     st.session_state.flexibot_messages = []   # persists FlexiBot chat across stream switches
 if "pending_nav" not in st.session_state:
     st.session_state.pending_nav = None       # queued navigation action to execute
+if "chat_pan_uploaded" not in st.session_state:
+    st.session_state.chat_pan_uploaded = False
+if "chat_approval_time" not in st.session_state:
+    st.session_state.chat_approval_time = None
+if "chat_approved" not in st.session_state:
+    st.session_state.chat_approved = False
+if "chat_app_id" not in st.session_state:
+    st.session_state.chat_app_id = None
+if "chat_offer_ready" not in st.session_state:
+    st.session_state.chat_offer_ready = False
 if "gemini_api_key" not in st.session_state:
     st.session_state.gemini_api_key = (
         os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY") or ""
@@ -545,6 +555,11 @@ if stream_choice != st.session_state.workflow_stream:
         st.session_state.topup_approved = False
         st.session_state.topup_data = {}
         st.session_state.topup_approval_time = None
+        st.session_state.chat_pan_uploaded = False
+        st.session_state.chat_approval_time = None
+        st.session_state.chat_approved = False
+        st.session_state.chat_app_id = None
+        st.session_state.chat_offer_ready = False
     st.session_state.flexibot_nav = False  # always clear after consuming
 
 st.sidebar.markdown("---")
@@ -2762,6 +2777,134 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
         with st.chat_message(message["role"], avatar=avatar):
             st.write(message["content"])
 
+    # ── In-chat document upload (appears after profile complete + eligible) ──
+    gathered_check = extract_profile_from_messages(st.session_state.messages)
+    all_profile    = {"name","phone","age","income","turnover"}.issubset(gathered_check.keys())
+
+    if all_profile and not st.session_state.chat_offer_ready:
+        _age      = gathered_check.get("age", 0)
+        _income   = gathered_check.get("income", 0)
+        _turnover = gathered_check.get("turnover", 0)
+        is_eligible = (
+            ELIGIBILITY_RULES["min_age"] <= _age <= ELIGIBILITY_RULES["max_age"] and
+            _income   >= ELIGIBILITY_RULES["min_monthly_income"] and
+            _turnover >= ELIGIBILITY_RULES["min_annual_turnover"]
+        )
+
+        if is_eligible:
+            # Generate app ID once
+            if not st.session_state.chat_app_id:
+                st.session_state.chat_app_id = f"FL-2026-{1100 + len(st.session_state.saved_applications)}"
+
+            st.markdown("---")
+            st.markdown("""
+<div style="background:linear-gradient(135deg,#1a472a,#145a32);padding:18px 22px;border-radius:12px;border-left:5px solid #2ecc71;margin-bottom:16px">
+<h4 style="color:#2ecc71;margin:0 0 4px 0">✅ You're Eligible for a FlexiLoan!</h4>
+<p style="color:#ecf0f1;margin:0;font-size:13px">Upload your PAN Card below to complete your application instantly.</p>
+</div>""", unsafe_allow_html=True)
+
+            if not st.session_state.chat_pan_uploaded:
+                pan_file = st.file_uploader(
+                    "🪪 Upload PAN Card (PDF / JPG / PNG)",
+                    type=["pdf", "jpg", "jpeg", "png"],
+                    key="chat_pan_uploader"
+                )
+                if pan_file:
+                    st.session_state.chat_pan_uploaded = True
+                    # Register application
+                    max_emi      = _income * 0.4
+                    optimal_loan = max(min(int(max_emi * 24), 2000000), 100000)
+                    rate         = 12.0
+                    t            = 24
+                    monthly_emi  = optimal_loan * (rate/1200) * (1+rate/1200)**t / ((1+rate/1200)**t - 1)
+                    app_id       = st.session_state.chat_app_id
+                    st.session_state.saved_applications[app_id] = {
+                        "applicant_data": {
+                            "application_id": app_id,
+                            "name":           gathered_check.get("name", "Customer"),
+                            "phone":          str(gathered_check.get("phone", "")),
+                            "age":            _age,
+                            "monthly_income": _income,
+                            "annual_turnover":_turnover,
+                            "loan_amount":    optimal_loan,
+                            "interest_rate":  rate,
+                            "tenure_months":  t,
+                            "monthly_emi":    round(monthly_emi, 0),
+                            "disbursement_date": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d"),
+                            "customer_type":  "IN_PROGRESS",
+                        },
+                        "documents_uploaded": {"pan": True, "bank": False},
+                        "messages": [],
+                        "saved_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                    st.session_state.chat_approval_time = datetime.now()
+                    st.rerun()
+            else:
+                st.success("✓ PAN Card uploaded successfully")
+
+            # Countdown + approval
+            if st.session_state.chat_pan_uploaded and st.session_state.chat_approval_time and not st.session_state.chat_approved:
+                elapsed   = (datetime.now() - st.session_state.chat_approval_time).total_seconds()
+                remaining = max(0, 5 - int(elapsed))
+                if remaining > 0:
+                    st.info(f"⏳ Verifying your PAN Card... **{remaining}s** — please wait")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.session_state.chat_approved     = True
+                    st.session_state.chat_offer_ready  = True
+                    app_id = st.session_state.chat_app_id
+                    st.session_state.saved_applications[app_id]["applicant_data"]["customer_type"] = "APPROVED"
+                    app_data    = st.session_state.saved_applications[app_id]["applicant_data"]
+                    loan_amount = app_data["loan_amount"]
+                    approval_msg = (
+                        f"🎉 **Congratulations {app_data['name']}! Your loan application is APPROVED!**\n\n"
+                        f"**Application ID:** {app_id}\n"
+                        f"**Approved Amount:** Rs.{loan_amount:,}\n"
+                        f"**Monthly EMI:** Rs.{app_data['monthly_emi']:,.0f}\n"
+                        f"**Disbursement:** {app_data['disbursement_date']}\n\n"
+                        "Your Offer Letter is ready to download below! 👇"
+                    )
+                    st.session_state.messages.append({"role": "model", "content": approval_msg})
+                    st.session_state.flexibot_messages = st.session_state.messages.copy()
+                    st.rerun()
+
+    # ── Offer letter download (shown after chat approval) ─────────────────
+    if st.session_state.chat_offer_ready and st.session_state.chat_app_id:
+        app_id   = st.session_state.chat_app_id
+        app_data = st.session_state.saved_applications.get(app_id, {}).get("applicant_data", {})
+        st.markdown("---")
+        st.markdown("""
+<div style="background:linear-gradient(135deg,#1B365D,#1e3f6f);padding:18px 22px;border-radius:12px;border-left:5px solid #00B4D8;margin-bottom:16px">
+<h4 style="color:#00B4D8;margin:0 0 4px 0">📄 Your Documents are Ready</h4>
+<p style="color:rgba(255,255,255,0.85);margin:0;font-size:13px">Download your loan documents below.</p>
+</div>""", unsafe_allow_html=True)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            emi_details = {
+                "principal":      app_data.get("loan_amount", 500000),
+                "annual_rate":    app_data.get("interest_rate", 12.0),
+                "tenure_months":  app_data.get("tenure_months", 24),
+                "emi":            app_data.get("monthly_emi", 0),
+            }
+            offer_pdf = generate_offer_letter_pdf(app_data, emi_details)
+            st.download_button("📥 Offer Letter", offer_pdf,
+                               f"FlexiLoans_Offer_{app_id}.pdf", "application/pdf",
+                               key="chat_offer_dl", use_container_width=True)
+        with col2:
+            sanction_pdf = generate_sanction_letter_pdf(app_data)
+            st.download_button("📥 Sanction Letter", sanction_pdf,
+                               f"FlexiLoans_Sanction_{app_id}.pdf", "application/pdf",
+                               key="chat_sanction_dl", use_container_width=True)
+        with col3:
+            sub_pdf = generate_application_submission_pdf(app_data, {"pan": True, "bank": False})
+            st.download_button("📥 Application Form", sub_pdf,
+                               f"FlexiLoans_Application_{app_id}.pdf", "application/pdf",
+                               key="chat_app_dl", use_container_width=True)
+        st.info("💸 Loan amount will be disbursed to your registered bank account within 2 business days.")
+        render_topup_section(app_data, key_prefix="chat_topup_")
+        st.markdown("---")
+
     if user_input := st.chat_input("Type your message — I'll guide you completely..."):
         st.session_state.chat_active = True
         st.session_state.messages.append({"role": "user", "content": user_input})
@@ -2850,7 +2993,9 @@ TOP-UP (approved customers): max(75% of loan, 3× income) | Rate+0.5% | Tenure 6
 STATUSES → APPROVED: celebrate + offer top-up | IN_PROGRESS: check pending docs | REJECTED: explain + improvement plan + reapply date
 
 ━━━ HOW TO BEHAVE ━━━
-APPLY FLOW: Collect name→age→phone→turnover→income one at a time. Once all 5 collected, check eligibility instantly. If eligible: compute optimal loan, say "I'm preparing your application now — click the green button above to continue."
+APPLY FLOW: Collect name→age→phone→income→turnover one at a time. Once all 5 collected, check eligibility instantly.
+  - If ELIGIBLE: say "Great news — you qualify! A PAN Card upload section has appeared just below our chat. Please upload your PAN Card there and your loan will be approved instantly!"
+  - If INELIGIBLE: explain which criteria failed, give improvement advice, do NOT ask for documents.
 STATUS CHECK: Use LIVE APPLICATION DATA. Never say "I can't access" — you have all data. Give exact stage + next action.
 PHONE LOOKUP: If phone found in data → greet by name, give status, offer action.
 NOT FOUND: Say clearly "I could not find application [ID]. Please verify — it looks like FL-2026-XXXX."
@@ -2860,7 +3005,7 @@ TOP-UP: For approved customers — calculate amount, quote EMI, tell "I've queue
 RULES:
 1. Never say "I don't have access" or "call support" — solve everything yourself
 2. One question at a time when collecting profile data
-3. After any detection, say "I've prepared a green action button above — just click it"
+3. For new applicants — NEVER tell them to go to another section; the PAN upload section appears automatically in this chat
 4. Use Rs. not rupee symbol
 5. Be warm, specific, action-oriented
 6. End every response with one clear next step
@@ -2891,19 +3036,11 @@ RULES:
             st.session_state.saved_applications,
             EXISTING_APPLICANTS
         )
-        # Also check if full profile collected → new applicant navigation
+        # Only queue existing-applicant navs; new-applicant flow is handled in-chat
         gathered_now = extract_profile_from_messages(st.session_state.messages)
-        apply_intent = any(kw in " ".join(m["content"] for m in st.session_state.messages).lower()
-                           for kw in ["apply","want a loan","need a loan","start application","get a loan"])
-        all_have = {"name","phone","age","income","turnover"}.issubset(gathered_now.keys())
-        phone_valid = _re.match(r'^\d{10}$', str(gathered_now.get("phone","")))
-        if apply_intent and all_have and phone_valid:
-            detected_nav = [{
-                "type": "goto_new_applicant_prefill",
-                "label": "Start Application — All details pre-filled",
-                "headline": f"Ready to apply! I've collected all your details. Click to proceed to document upload instantly.",
-                "profile": gathered_now,
-            }] + detected_nav
+        all_have     = {"name","phone","age","income","turnover"}.issubset(gathered_now.keys())
+        # Suppress goto_new_applicant_prefill — PAN upload section renders in chat instead
+        detected_nav = [n for n in detected_nav if n.get("type") != "goto_new_applicant_prefill"]
 
         if detected_nav and st.session_state.pending_nav is None:
             st.session_state.pending_nav = detected_nav[0]
