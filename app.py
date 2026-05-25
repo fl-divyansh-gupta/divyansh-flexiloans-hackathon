@@ -54,11 +54,20 @@ html, body, [data-testid="stApp"], .main {
   color: var(--text) !important;
 }
 
-/* ── Hide Streamlit default branding but keep sidebar toggle ── */
-#MainMenu, footer { visibility: hidden; }
-header { visibility: hidden; }
-[data-testid="collapsedControl"] { visibility: visible !important; }
+/* ── Hide Streamlit default branding ── */
+#MainMenu, footer, header { visibility: hidden; }
 [data-testid="stToolbar"] { display: none; }
+
+/* ── Persistent top nav bar ── */
+.flexi-nav { display:flex; gap:8px; margin-bottom:20px; }
+.flexi-nav-btn {
+  flex:1; padding:10px 0; border-radius:8px; border:2px solid rgba(0,180,216,0.25);
+  background:transparent; color:var(--brand-navy); font-weight:600; font-size:13px;
+  cursor:pointer; transition:all 0.2s; text-align:center; font-family:'Inter',sans-serif;
+}
+.flexi-nav-btn:hover  { background:rgba(0,180,216,0.08); border-color:var(--brand-cyan); }
+.flexi-nav-btn.active { background:var(--brand-navy); color:#FFFFFF; border-color:var(--brand-navy); }
+.flexi-nav-btn.chat-btn.active { background:var(--brand-cyan); border-color:var(--brand-cyan); }
 
 /* ── Page title ── */
 .main h1 {
@@ -438,7 +447,7 @@ st.markdown("""
 
 # Initialize session state
 if "workflow_stream" not in st.session_state:
-    st.session_state.workflow_stream = None
+    st.session_state.workflow_stream = "💬 Chat with FlexiBot"
 if "eligibility_passed" not in st.session_state:
     st.session_state.eligibility_passed = False
 if "applicant_data" not in st.session_state:
@@ -1950,6 +1959,43 @@ def render_smart_recommendations():
                 st.write(f"{a['icon']} {a['action']}")
 
 render_smart_recommendations()
+
+# ── Persistent stream navigation bar (always visible) ────────────────────────
+_cur = st.session_state.workflow_stream or ""
+_nav_col1, _nav_col2, _nav_col3 = st.columns(3)
+with _nav_col1:
+    if st.button("🆕  New Application",
+                 use_container_width=True,
+                 type="primary" if _cur == "New Applicant" else "secondary",
+                 key="topnav_new"):
+        st.session_state.workflow_stream = "New Applicant"
+        if not st.session_state.get("flexibot_nav"):
+            st.session_state.eligibility_passed = False
+            st.session_state.applicant_data = {}
+            st.session_state.documents_uploaded = {"pan": False, "bank": False}
+            st.session_state.messages = []
+            st.session_state.chat_active = False
+        st.rerun()
+with _nav_col2:
+    if st.button("📋  Existing Application",
+                 use_container_width=True,
+                 type="primary" if _cur == "Existing Applicant" else "secondary",
+                 key="topnav_existing"):
+        st.session_state.workflow_stream = "Existing Applicant"
+        if not st.session_state.get("flexibot_nav"):
+            st.session_state.applicant_data = {}
+            st.session_state.messages = []
+            st.session_state.chat_active = False
+            st.session_state.phone_verified = False
+        st.rerun()
+with _nav_col3:
+    if st.button("💬  Chat with FlexiBot",
+                 use_container_width=True,
+                 type="primary" if _cur == "💬 Chat with FlexiBot" else "secondary",
+                 key="topnav_chat"):
+        st.session_state.workflow_stream = "💬 Chat with FlexiBot"
+        st.rerun()
+st.markdown("---")
 
 # STREAM A: NEW APPLICANT
 if st.session_state.workflow_stream == "New Applicant":
