@@ -2834,21 +2834,44 @@ elif st.session_state.workflow_stream == "💬 Chat with FlexiBot":
         st.session_state.flexibot_messages = st.session_state.messages.copy()
         st.session_state.chat_active = True
 
-    # ── Pending navigation banner (set after LLM response, consumed on click) ──
+    # ── Pending navigation banner ─────────────────────────────────────────────
     if st.session_state.pending_nav:
-        nav = st.session_state.pending_nav
+        nav  = st.session_state.pending_nav
+        ntype = nav.get("type", "")
+
+        # Choose colours by nav type
+        if ntype in ("goto_existing_customer", "goto_topup"):
+            bg, border, badge_bg, badge_txt = "#0d2d4a", "#00B4D8", "#00B4D8", "#FFFFFF"
+            icon = "📋" if ntype == "goto_existing_customer" else "🔄"
+            badge_label = "Existing Customer" if ntype == "goto_existing_customer" else "Top-Up Ready"
+        elif ntype == "resume_new_applicant":
+            bg, border, badge_bg, badge_txt = "#2c1a0e", "#f39c12", "#f39c12", "#FFFFFF"
+            icon = "📄"
+            badge_label = "Documents Pending"
+        else:
+            bg, border, badge_bg, badge_txt = "#1a3a1a", "#2ecc71", "#2ecc71", "#FFFFFF"
+            icon = "🆕"
+            badge_label = "New Application"
+
         st.markdown(f"""
-<div style="background:#1a472a;padding:18px 22px;border-radius:10px;margin-bottom:16px;border-left:5px solid #2ecc71">
-<h4 style="color:#2ecc71;margin:0 0 6px 0">FlexiBot Action Ready</h4>
-<p style="color:#ecf0f1;margin:0 0 12px 0">{nav.get('headline','')}</p>
+<div style="background:{bg};padding:20px 24px;border-radius:12px;margin-bottom:16px;
+            border-left:5px solid {border};border:1px solid {border}30">
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+    <span style="font-size:20px">{icon}</span>
+    <span style="background:{badge_bg};color:{badge_txt};font-size:11px;font-weight:700;
+                 padding:3px 10px;border-radius:99px;letter-spacing:0.05em">{badge_label}</span>
+  </div>
+  <p style="color:#FFFFFF;font-size:15px;font-weight:600;margin:0 0 6px 0">{nav.get('headline','')}</p>
+  <p style="color:rgba(255,255,255,0.7);font-size:12px;margin:0">FlexiBot has detected your details — click below to go directly to the right section.</p>
 </div>""", unsafe_allow_html=True)
-        col_go, col_stay = st.columns([2, 1])
+
+        col_go, col_stay = st.columns([3, 1])
         with col_go:
             if st.button(f"→ {nav['label']}", key="pending_nav_go", type="primary", use_container_width=True):
                 st.session_state.flexibot_messages = st.session_state.messages.copy()
                 flexibot_navigate(nav)
         with col_stay:
-            if st.button("Stay in chat", key="pending_nav_stay", use_container_width=True):
+            if st.button("✕ Dismiss", key="pending_nav_stay", use_container_width=True):
                 st.session_state.pending_nav = None
                 st.rerun()
         st.markdown("---")
@@ -3108,16 +3131,27 @@ APPLY INTENT ("apply", "want a loan", "get a loan"):
   - Once all 5 collected + eligible: say "Great news! The PAN Card upload section is now visible just below our chat — please upload to get instant approval!"
   - If INELIGIBLE: explain which criteria failed, give improvement tips
 
-STATUS CHECK: Use LIVE APPLICATION DATA. Never say you can't access data.
-EMI CALC: Use LIVE EMI RESULT if available.
-TOP-UP: For approved customers only.
+STATUS CHECK (existing applicant found by ID or phone):
+  - Greet by name, state their exact status and stage
+  - For APPROVED: celebrate, state loan amount, offer top-up
+  - For IN_PROGRESS with pending docs: list exactly which docs are missing, say "I've placed a blue action button above — click it to go directly to your application and upload the documents"
+  - For IN_PROGRESS without pending docs: give estimated completion date
+  - For REJECTED: explain reason, give improvement plan, give reapply date
+  - Always say: "I've placed a navigation button above to take you directly to your application"
+
+NEW APPLICANT APPLY FLOW (after all 5 fields + eligible):
+  - Say: "You're eligible! A PAN Card upload section has appeared below this chat — please upload to get instant approval"
+  - Do NOT tell them to click any button for new applications — the upload is already visible below
+
+EMI CALC: Use LIVE EMI RESULT if available, otherwise ask for amount/rate/tenure.
+TOP-UP: For approved customers — calculate max top-up, quote EMI, say "click the blue button above to proceed"
 
 RULES:
 1. NEVER ask for name/phone when user only wants recommendations
 2. NEVER confuse a 10-digit phone number with annual turnover
-3. One question at a time
+3. One question at a time when collecting profile fields
 4. Use Rs. not ₹ symbol
-5. Be warm, concise, action-oriented
+5. Be warm, specific, action-oriented — always name the customer
 6. End every response with exactly one clear next step
 """
 
