@@ -1,6 +1,18 @@
 # FlexiLoans Smart Onboarding Engine
 
-> **Sapne Tere Ye** — AI-powered loan onboarding platform for India's small businesses.
+---
+
+## Problem Statement
+
+> **Hackathon Challenge #10 — Chat Agent for Lending**
+>
+> Build a chat agent for a lending use case — sales, customer service, onboarding, document collection over WhatsApp, empathetic collections, abandonment recovery, and more.
+
+**Our Solution:** End-to-end AI-powered loan onboarding platform for India's small businesses — covering sales (loan recommendations, EMI calculator), customer service (application status, financial guidance), onboarding (eligibility check, document collection), and abandonment recovery (FlexiBot proactively re-engages and guides customers back to their application).
+
+---
+
+> **Loan Nahi Samjho Tarakki Hai** — AI-powered loan onboarding platform for India's small businesses.
 
 A production-grade agentic onboarding system built for FlexiLoans, featuring an intelligent conversational AI (FlexiBot) that guides customers end-to-end through the loan lifecycle — from eligibility to disbursement.
 
@@ -135,6 +147,7 @@ streamlit run app.py
 
 - **Multilingual Support** — Hindi, Tamil, Telugu language selector; bot responds in selected language
 - **Email / SMS Sync** — automated status notifications and document reminders via email and SMS
+- **Voice Bot Integration** — speech-to-text input and text-to-speech responses so customers can interact with FlexiBot entirely by voice; enables WhatsApp Voice and IVR channel support
 
 ---
 
