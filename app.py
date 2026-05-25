@@ -111,20 +111,38 @@ button[aria-label="Collapse sidebar"] { display: none !important; }
 [data-testid="stSidebar"] [data-testid="stMetricLabel"] { color: rgba(255,255,255,0.7) !important; font-size: 10px !important; }
 
 /* Sidebar radio buttons */
-[data-testid="stSidebar"] [data-testid="stRadio"] > div { gap: 4px; }
+[data-testid="stSidebar"] [data-testid="stRadio"] > div { gap: 6px; }
 [data-testid="stSidebar"] [data-testid="stRadio"] label {
   background: rgba(255,255,255,0.05) !important;
   border-radius: 8px !important;
-  padding: 8px 12px !important;
+  padding: 9px 14px !important;
   margin: 2px 0 !important;
   transition: all 0.2s;
   border-left: 3px solid transparent !important;
   color: rgba(255,255,255,0.85) !important;
   font-size: 13px !important;
+  font-weight: 500 !important;
 }
 [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
   background: rgba(255,255,255,0.1) !important;
   border-left-color: var(--brand-cyan) !important;
+}
+/* FlexiBot option — always cyan button look */
+[data-testid="stSidebar"] [data-testid="stRadio"] div:last-child label {
+  background: linear-gradient(135deg, #00B4D8 0%, #0097B2 100%) !important;
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+  font-size: 14px !important;
+  padding: 12px 14px !important;
+  border-left: none !important;
+  border-radius: 10px !important;
+  margin-top: 6px !important;
+  box-shadow: 0 4px 12px rgba(0,180,216,0.35) !important;
+  letter-spacing: 0.01em;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] div:last-child label:hover {
+  background: linear-gradient(135deg, #00c8f0 0%, #00a8c8 100%) !important;
+  box-shadow: 0 6px 16px rgba(0,180,216,0.5) !important;
 }
 [data-testid="stSidebar"] [data-testid="stRadio"] [aria-checked="true"] + div label,
 [data-testid="stSidebar"] [data-testid="stRadio"] input:checked ~ label {
@@ -374,11 +392,25 @@ button[kind="primaryFormSubmit"] {
 hr { border-color: var(--border) !important; margin: 16px 0 !important; }
 
 /* ── Subheader overrides ── */
-[data-testid="stMarkdownContainer"] h3 {
+.main [data-testid="stMarkdownContainer"] h3,
+.block-container [data-testid="stMarkdownContainer"] h3 {
   color: var(--brand-navy) !important;
   border-bottom: 2px solid var(--brand-cyan);
   padding-bottom: 6px;
   margin-bottom: 14px;
+}
+/* Sidebar subheaders — highest specificity cyan override */
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h1,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h2,
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+  color: var(--brand-cyan) !important;
+  border-bottom: 1px solid rgba(0,180,216,0.3) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  margin-bottom: 10px;
 }
 
 /* ── Number inputs mono ── */
