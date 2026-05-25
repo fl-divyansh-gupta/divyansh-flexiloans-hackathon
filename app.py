@@ -54,8 +54,10 @@ html, body, [data-testid="stApp"], .main {
   color: var(--text) !important;
 }
 
-/* ── Hide Streamlit default branding ── */
-#MainMenu, footer, header { visibility: hidden; }
+/* ── Hide Streamlit default branding but keep sidebar toggle ── */
+#MainMenu, footer { visibility: hidden; }
+header { visibility: hidden; }
+[data-testid="collapsedControl"] { visibility: visible !important; }
 [data-testid="stToolbar"] { display: none; }
 
 /* ── Page title ── */
