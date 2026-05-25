@@ -70,7 +70,7 @@ html, body, [data-testid="stApp"], .main {
 }
 .main h2 { color: var(--brand-navy) !important; font-size: 16px !important; font-weight: 600 !important; }
 .main h3 { color: var(--brand-navy) !important; font-size: 14px !important; font-weight: 600 !important; }
-p, li, label, .stMarkdown { color: var(--text) !important; font-size: 13px !important; }
+.main p, .main li, .block-container label, .block-container .stMarkdown { color: var(--text) !important; font-size: 13px !important; }
 
 /* ── Sidebar — full navy brand ── */
 [data-testid="stSidebar"] {
@@ -254,7 +254,7 @@ button[kind="primaryFormSubmit"] {
 }
 [data-testid="stFileUploader"]:hover { border-color: var(--brand-cyan) !important; }
 
-/* ── Expander ── */
+/* ── Expander (main content) ── */
 [data-testid="stExpander"] {
   border: 1px solid var(--border) !important;
   border-radius: 10px !important;
@@ -265,6 +265,68 @@ button[kind="primaryFormSubmit"] {
   font-weight: 600 !important;
   font-size: 13px !important;
 }
+
+/* ── Sidebar expander — dark-themed ── */
+[data-testid="stSidebar"] [data-testid="stExpander"] {
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  border-radius: 8px !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary span {
+  color: rgba(255,255,255,0.9) !important;
+  font-size: 12px !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary svg {
+  fill: rgba(255,255,255,0.7) !important;
+  stroke: rgba(255,255,255,0.7) !important;
+}
+
+/* ── Sidebar inputs & selects — dark-themed ── */
+[data-testid="stSidebar"] .stTextInput > div > div > input,
+[data-testid="stSidebar"] .stNumberInput > div > div > input,
+[data-testid="stSidebar"] .stSelectbox > div > div,
+[data-testid="stSidebar"] .stSelectbox > div > div > div {
+  background: rgba(255,255,255,0.1) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+[data-testid="stSidebar"] .stNumberInput button {
+  background: rgba(255,255,255,0.1) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255,255,255,0.2) !important;
+}
+
+/* ── Sidebar slider labels ── */
+[data-testid="stSidebar"] [data-testid="stSlider"] p,
+[data-testid="stSidebar"] [data-testid="stSlider"] span,
+[data-testid="stSidebar"] [data-testid="stSlider"] label {
+  color: rgba(255,255,255,0.85) !important;
+}
+
+/* ── Sidebar all text elements — strong override ── */
+[data-testid="stSidebar"] p { color: rgba(255,255,255,0.85) !important; }
+[data-testid="stSidebar"] li { color: rgba(255,255,255,0.85) !important; }
+[data-testid="stSidebar"] span:not([data-testid]) { color: rgba(255,255,255,0.85) !important; }
+[data-testid="stSidebar"] .stMarkdown p { color: rgba(255,255,255,0.85) !important; }
+[data-testid="stSidebar"] .stMarkdown li { color: rgba(255,255,255,0.85) !important; }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: rgba(255,255,255,0.85) !important; }
+[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li { color: rgba(255,255,255,0.85) !important; }
+
+/* ── Sidebar caption ── */
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+[data-testid="stSidebar"] small { color: rgba(255,255,255,0.55) !important; }
+
+/* ── Sidebar selectbox option text ── */
+[data-testid="stSidebar"] [data-testid="stSelectbox"] span { color: rgba(255,255,255,0.9) !important; }
+
+/* ── Sidebar info/success/warning/error boxes ── */
+[data-testid="stSidebar"] [data-testid="stAlert"] {
+  background: rgba(255,255,255,0.1) !important;
+  border-color: rgba(255,255,255,0.25) !important;
+}
+[data-testid="stSidebar"] [data-testid="stAlert"] p { color: #FFFFFF !important; }
 
 /* ── Progress bar ── */
 .stProgress > div > div { background: var(--brand-cyan) !important; border-radius: 99px !important; }
@@ -357,7 +419,7 @@ hr { border-color: var(--border) !important; margin: 16px 0 !important; }
 [data-testid="stSelectbox"] > div { border-radius: 8px !important; }
 
 /* ── Checkbox ── */
-[data-testid="stCheckbox"] label { color: var(--text) !important; font-size: 13px !important; }
+.block-container [data-testid="stCheckbox"] label { color: var(--text) !important; font-size: 13px !important; }
 </style>
 """, unsafe_allow_html=True)
 
