@@ -364,10 +364,11 @@ hr { border-color: var(--border) !important; margin: 16px 0 !important; }
 # Brand header bar
 st.markdown("""
 <div class="flexi-topbar">
+  <div style="width:36px;height:36px;background:#00B4D8;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#1B365D;margin-right:10px;letter-spacing:-0.5px;flex-shrink:0">FL</div>
   <div class="flexi-logo">Flexi<span>Loans</span></div>
-  <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 4px"></div>
+  <div style="width:1px;height:20px;background:rgba(255,255,255,0.2);margin:0 8px"></div>
   <div style="font-size:11px;color:rgba(255,255,255,0.6);font-weight:400">Smart Onboarding Engine</div>
-  <div class="flexi-tagline">Sapne Tere Ye &nbsp;·&nbsp; Funding India's Dreams</div>
+  <div class="flexi-tagline">Loan Nahi Samjho Tarakki Hai</div>
 </div>
 """, unsafe_allow_html=True)
 
